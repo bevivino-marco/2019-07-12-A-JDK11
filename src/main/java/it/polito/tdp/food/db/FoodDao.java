@@ -16,9 +16,11 @@ import it.polito.tdp.food.model.Relazioni;
 
 public class FoodDao {
 	public List<Food> listFoods(int porzioni){
-		String sql = "SELECT DISTINCT f.food_code ,f.display_name " + 
+		String sql = "SELECT DISTINCT f.food_code ,f.display_name , COUNT(p.portion_id) " + 
 				"FROM food_pyramid_mod.portion p, food f " + 
-				"WHERE p.food_code=f.food_code AND p.portion_amount<=? " ;
+				"WHERE p.food_code=f.food_code  " + 
+				"GROUP BY f.food_code ,f.display_name  " + 
+				"HAVING COUNT(p.portion_id)=? " ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
 
@@ -115,29 +117,42 @@ public class FoodDao {
 
 	}
 
-	public List<Relazioni> getRel(Map<Integer, Food> cibi) {
-		String sql = "SELECT fc1.food_code,fc2.food_code,c1.condiment_code,SUM(c1.condiment_calories) " + 
+	public List<Relazioni> getRel(Map<Integer, Food> cibi,int porzioni) {
+		String sql = "SELECT fc1.food_code,fc2.food_code,AVG(c1.condiment_calories) " + 
 				"FROM condiment c1 , food_condiment fc1, condiment c2 , food_condiment fc2 " + 
-				"WHERE fc1.food_code!=fc2.food_code AND fc1.condiment_code=fc2.condiment_code " + 
+				"WHERE fc1.food_code>fc2.food_code AND fc1.condiment_code=fc2.condiment_code " + 
 				"AND fc1.condiment_code=c1.condiment_code AND c1.condiment_code=c2.condiment_code " + 
-				"GROUP BY fc1.food_code,fc2.food_code " ;
+				
+				"AND fc1.food_code IN (SELECT DISTINCT f.food_code cod " + 
+				"FROM food_pyramid_mod.portion p, food f " + 
+				"WHERE p.food_code=f.food_code  " + 
+				"GROUP BY f.food_code ,f.display_name  " + 
+				"HAVING COUNT(p.portion_id)=?) " + 
+				
+				"AND fc2.food_code IN (SELECT DISTINCT f.food_code cod " + 
+				"FROM food_pyramid_mod.portion p, food f " + 
+				"WHERE p.food_code=f.food_code  " + 
+				"GROUP BY f.food_code ,f.display_name  " + 
+				"HAVING COUNT(p.portion_id)=?) " + 
+				"GROUP BY fc1.food_code,fc2.food_code " + 
+				"HAVING AVG(c1.condiment_calories)>0 " ;
 		try {
 			Connection conn = DBConnect.getConnection() ;
 
 			PreparedStatement st = conn.prepareStatement(sql) ;
-			
+			st.setInt(1, porzioni);
+			st.setInt(2, porzioni);
 			List<Relazioni> list = new LinkedList<>() ;
 			
 			ResultSet res = st.executeQuery() ;
 			
 			while(res.next()) {
 				try {
-					if (cibi.containsKey(res.getInt("fc1.food_code")) && cibi.containsKey(res.getInt("fc2.food_code"))&&
-							res.getDouble("SUM(c1.condiment_calories)")>0.0) {
+					if (cibi.containsKey(res.getInt("fc1.food_code")) && cibi.containsKey(res.getInt("fc2.food_code"))) {
 					list.add(new Relazioni(
 					cibi.get(res.getInt("fc1.food_code")),
 							cibi.get(res.getInt("fc2.food_code")),
-							res.getDouble("SUM(c1.condiment_calories)")
+							res.getDouble("AVG(c1.condiment_calories)")
 							));}
 				} catch (Throwable t) {
 					t.printStackTrace();

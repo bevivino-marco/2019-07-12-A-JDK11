@@ -51,6 +51,7 @@ public class FoodController {
     void doCreaGrafo(ActionEvent event) {
     	try {
     	txtResult.clear();
+    	boxFood.getItems().clear();
     	model.creaGrafo(Integer.parseInt(txtPorzioni.getText()));
     	boxFood.getItems().addAll(model.getFood());
     	txtResult.appendText(model.getVA());
@@ -61,10 +62,15 @@ public class FoodController {
     
     @FXML
     void doCalorie(ActionEvent event) {
+    	try {
+        	
     	txtResult.clear();
     	txtResult.appendText("lista\n"+model.getOutPut(boxFood.getValue()));
+        	
+        	}catch (Exception e) {
+        txtResult.appendText("errore nel do calorie");}
     	
-    	txtResult.appendText("Analisi calorie...");
+    	
     }
 
     @FXML

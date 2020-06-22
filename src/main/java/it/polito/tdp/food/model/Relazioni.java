@@ -61,10 +61,11 @@ public class Relazioni implements Comparable<Relazioni>{
 		@Override
 		public int compareTo(Relazioni o) {
 			if (this.cal<o.getCal())
-				return -1;
-			if (this.cal<o.getCal())
 				return 1;
-			return 0;
+			if (this.cal>o.getCal())
+				return -1;
+			else return -(this.f1.compareTo(o.getF1()));
+			
 		}
 		
 }
